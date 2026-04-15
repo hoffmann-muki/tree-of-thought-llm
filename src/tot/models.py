@@ -120,11 +120,28 @@ class OpenAIChatBackend(LLMBackend):
 
 
 class TransformersChatBackend(LLMBackend):
-    def __init__(self, device_map: str = "auto", torch_dtype: str = "auto", trust_remote_code: bool = False):
+    def __init__(
+        self,
+        device_map: str = "auto",
+        torch_dtype: str = "auto",
+        trust_remote_code: bool = False,
+        local_files_only: bool = True,
+        model_root: Optional[str] = None,
+    ):
         self.device_map = device_map
         self.torch_dtype = torch_dtype
         self.trust_remote_code = trust_remote_code
+        self.local_files_only = local_files_only
+        self.model_root = model_root or os.getenv("TOT_LLM_MODEL_ROOT", "/pscratch/sd/h/hmuki/models")
         self._loaded: Dict[str, Dict[str, Any]] = {}
+
+    def _resolve_model_name(self, model_name: str) -> str:
+        if os.path.isdir(model_name):
+            return model_name
+        candidate = os.path.join(self.model_root, model_name)
+        if os.path.isdir(candidate):
+            return candidate
+        return model_name
 
     def _resolve_dtype(self, torch_module):
         if self.torch_dtype == "auto":
@@ -134,6 +151,7 @@ class TransformersChatBackend(LLMBackend):
         return getattr(torch_module, self.torch_dtype)
 
     def _load_model(self, model_name: str):
+        resolved_model_name = self._resolve_model_name(model_name)
         if model_name in self._loaded:
             return self._loaded[model_name]
 
@@ -149,12 +167,17 @@ class TransformersChatBackend(LLMBackend):
             ) from exc
 
         dtype = self._resolve_dtype(torch)
-        tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=self.trust_remote_code)
+        tokenizer = AutoTokenizer.from_pretrained(
+            resolved_model_name,
+            trust_remote_code=self.trust_remote_code,
+            local_files_only=self.local_files_only,
+        )
         model = AutoModelForCausalLM.from_pretrained(
-            model_name,
+            resolved_model_name,
             device_map=self.device_map,
             torch_dtype=dtype,
             trust_remote_code=self.trust_remote_code,
+            local_files_only=self.local_files_only,
         )
 
         entry = {"tokenizer": tokenizer, "model": model, "torch": torch}
@@ -197,7 +220,6 @@ class TransformersChatBackend(LLMBackend):
             generation_kwargs = {
                 "max_new_tokens": max_tokens,
                 "do_sample": temperature > 0,
-                "num_return_sequences": cnt,
             }
             if tokenizer.eos_token_id is not None:
                 generation_kwargs["pad_token_id"] = tokenizer.eos_token_id
@@ -206,10 +228,24 @@ class TransformersChatBackend(LLMBackend):
             if temperature > 0:
                 generation_kwargs["temperature"] = max(temperature, 1e-5)
 
-            with torch.no_grad():
-                generation = hf_model.generate(**encoded, **generation_kwargs)
+            if temperature > 0:
+                generation_kwargs["num_return_sequences"] = cnt
+                with torch.no_grad():
+                    generation = hf_model.generate(**encoded, **generation_kwargs)
+                sequences = generation
+            else:
+                sequences = []
+                for _ in range(cnt):
+                    with torch.no_grad():
+                        generation = hf_model.generate(
+                            **encoded,
+                            max_new_tokens=max_tokens,
+                            do_sample=False,
+                            pad_token_id=generation_kwargs.get("pad_token_id"),
+                        )
+                    sequences.append(generation[0])
 
-            for seq in generation:
+            for seq in sequences:
                 generated_ids = seq[prompt_len:]
                 text = tokenizer.decode(generated_ids, skip_special_tokens=True)
                 text = _apply_stop(text, stop)
@@ -244,6 +280,8 @@ class BackendManager:
         hf_device_map: str,
         hf_torch_dtype: str,
         hf_trust_remote_code: bool,
+        hf_local_files_only: bool,
+        hf_model_root: Optional[str],
     ) -> LLMBackend:
         if provider == "openai":
             return OpenAIChatBackend(
@@ -267,6 +305,8 @@ class BackendManager:
                 device_map=hf_device_map,
                 torch_dtype=hf_torch_dtype,
                 trust_remote_code=hf_trust_remote_code,
+                local_files_only=hf_local_files_only,
+                model_root=hf_model_root,
             )
         raise ValueError(f"Unsupported provider: {provider}")
 
@@ -281,6 +321,8 @@ class BackendManager:
         hf_device_map: str = "auto",
         hf_torch_dtype: str = "auto",
         hf_trust_remote_code: bool = False,
+        hf_local_files_only: Optional[bool] = None,
+        hf_model_root: Optional[str] = None,
     ):
         self.provider = provider
         if default_model is not None:
@@ -295,6 +337,8 @@ class BackendManager:
             hf_device_map=hf_device_map,
             hf_torch_dtype=hf_torch_dtype,
             hf_trust_remote_code=hf_trust_remote_code,
+            hf_local_files_only=(True if hf_local_files_only is None else hf_local_files_only),
+            hf_model_root=hf_model_root,
         )
 
     def generate(
@@ -345,6 +389,8 @@ def configure_llm_backend(
     hf_device_map: str = "auto",
     hf_torch_dtype: str = "auto",
     hf_trust_remote_code: bool = False,
+    hf_local_files_only: Optional[bool] = None,
+    hf_model_root: Optional[str] = None,
 ):
     _BACKEND_MANAGER.configure(
         provider=provider,
@@ -355,6 +401,8 @@ def configure_llm_backend(
         hf_device_map=hf_device_map,
         hf_torch_dtype=hf_torch_dtype,
         hf_trust_remote_code=hf_trust_remote_code,
+        hf_local_files_only=hf_local_files_only,
+        hf_model_root=hf_model_root,
     )
 
 
