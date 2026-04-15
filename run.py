@@ -4,10 +4,25 @@ import argparse
 
 from tot.tasks import get_task
 from tot.methods.bfs import solve, naive_solve
-from tot.models import gpt_usage
+from tot.models import configure_llm_backend, gpt_usage, reset_gpt_usage
 
 def run(args):
+    configure_llm_backend(
+        provider=args.provider,
+        default_model=args.backend,
+        default_temperature=args.temperature,
+        api_key=args.api_key,
+        api_base=args.api_base,
+        hf_device_map=args.hf_device_map,
+        hf_torch_dtype=args.hf_torch_dtype,
+        hf_trust_remote_code=args.hf_trust_remote_code,
+    )
+    reset_gpt_usage()
+
     task = get_task(args.task)
+    if hasattr(task, 'configure_evaluator'):
+        task.configure_evaluator(args.evaluator_model, args.evaluator_temperature)
+
     logs, cnt_avg, cnt_any = [], 0, 0
     if args.naive_run:
         file = f'./logs/{args.task}/{args.backend}_{args.temperature}_naive_{args.prompt_sample}_sample_{args.n_generate_sample}_start{args.task_start_index}_end{args.task_end_index}.json'
@@ -42,8 +57,17 @@ def run(args):
 
 def parse_args():
     args = argparse.ArgumentParser()
-    args.add_argument('--backend', type=str, choices=['gpt-4', 'gpt-3.5-turbo', 'gpt-4o'], default='gpt-4')
+    args.add_argument('--provider', type=str, choices=['openai', 'openai-compatible', 'transformers'], default='openai')
+    args.add_argument('--backend', '--model', dest='backend', type=str, default='gpt-4')
     args.add_argument('--temperature', type=float, default=0.7)
+    args.add_argument('--evaluator_model', type=str, default=None)
+    args.add_argument('--evaluator_temperature', type=float, default=0.0)
+
+    args.add_argument('--api_key', type=str, default=None)
+    args.add_argument('--api_base', type=str, default=None)
+    args.add_argument('--hf_device_map', type=str, default='auto')
+    args.add_argument('--hf_torch_dtype', type=str, default='auto')
+    args.add_argument('--hf_trust_remote_code', action='store_true')
 
     args.add_argument('--task', type=str, required=True, choices=['game24', 'text', 'crosswords'])
     args.add_argument('--task_start_index', type=int, default=900)
@@ -60,6 +84,8 @@ def parse_args():
     args.add_argument('--n_select_sample', type=int, default=1)
 
     args = args.parse_args()
+    if args.evaluator_model is None:
+        args.evaluator_model = args.backend
     return args
 
 

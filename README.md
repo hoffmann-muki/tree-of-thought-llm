@@ -25,7 +25,15 @@ Also check [its tweet thread](https://twitter.com/ShunyuYao12/status/16593575474
 
 
 ## Setup
-1. Set up OpenAI API key and store in environment variable ``OPENAI_API_KEY`` (see [here](https://help.openai.com/en/articles/5112595-best-practices-for-api-key-safety)). 
+1. Choose a provider and configure credentials/runtime.
+
+- `openai` provider (default): set `OPENAI_API_KEY`.
+- `openai-compatible` provider: set `OPENAI_COMPATIBLE_API_BASE` and `OPENAI_COMPATIBLE_API_KEY` (or use `OPENAI_API_BASE` / `OPENAI_API_KEY`).
+- `transformers` provider (local HF models): install additional dependencies:
+
+```bash
+pip install transformers torch accelerate sentencepiece
+```
 
 2. Install `tot` package in two ways:
 - Option 1: Install from PyPI
@@ -48,7 +56,7 @@ import argparse
 from tot.methods.bfs import solve
 from tot.tasks.game24 import Game24Task
 
-args = argparse.Namespace(backend='gpt-4', temperature=0.7, task='game24', naive_run=False, prompt_sample=None, method_generate='propose', method_evaluate='value', method_select='greedy', n_generate_sample=1, n_evaluate_sample=3, n_select_sample=5)
+args = argparse.Namespace(provider='openai', backend='gpt-4', temperature=0.7, task='game24', naive_run=False, prompt_sample=None, method_generate='propose', method_evaluate='value', method_select='greedy', n_generate_sample=1, n_evaluate_sample=3, n_select_sample=5)
 
 task = Game24Task()
 ys, infos = solve(args, task, 900)
@@ -69,6 +77,12 @@ Run experiments via ``sh scripts/{game24, text, crosswords}/{standard_sampling, 
 
 The very simple ``run.py`` implements the ToT + BFS algorithm, as well as the naive IO/CoT sampling. Some key arguments:
 
+- ``--provider`` (choices=[``openai``, ``openai-compatible``, ``transformers``]): selects LLM backend provider
+- ``--backend``: model identifier for the selected provider (e.g. ``gpt-4``, ``meta-llama/Meta-Llama-3-8B-Instruct``, ``mistralai/Mistral-Small-Instruct-2409``)
+- ``--evaluator_model``: optional scorer/evaluator model (defaults to ``--backend``)
+- ``--api_base`` / ``--api_key``: optional CLI overrides for API-based providers
+- ``--hf_device_map``, ``--hf_torch_dtype``, ``--hf_trust_remote_code``: transformer runtime controls
+
 - ``--naive_run``: if True, run naive IO/CoT sampling instead of ToT + BFS.
 -  ``--prompt_sample`` (choices=[``standard``, ``cot``]): sampling prompt
 - ``--method_generate`` (choices=[``sample``, ``propose``]): thought generator, whether to sample independent thoughts (used in Creative Writing) or propose sequential thoughts (used in Game of 24)
@@ -76,6 +90,34 @@ The very simple ``run.py`` implements the ToT + BFS algorithm, as well as the na
 - ``--n_generate_sample``: number of times to prompt for thought generation
 - ``--n_evaluate_sample``: number of times to prompt for state evaluation
 - ``--n_select_sample``: number of states to keep from each step (i.e. ``b`` in the paper's ToT + BFS algorithm)
+
+### Backend Examples
+
+OpenAI default:
+
+```bash
+python run.py --task game24 --provider openai --backend gpt-4
+```
+
+OpenAI-compatible server (e.g., vLLM/TGI proxy):
+
+```bash
+OPENAI_COMPATIBLE_API_BASE=http://localhost:8000/v1 \
+OPENAI_COMPATIBLE_API_KEY=dummy \
+python run.py --task game24 --provider openai-compatible --backend meta-llama/Meta-Llama-3-8B-Instruct
+```
+
+Local transformers (Llama 3):
+
+```bash
+python run.py --task game24 --provider transformers --backend meta-llama/Meta-Llama-3-8B-Instruct --hf_device_map auto
+```
+
+Local transformers (Mistral Small):
+
+```bash
+python run.py --task text --provider transformers --backend mistralai/Mistral-Small-Instruct-2409 --evaluator_model mistralai/Mistral-Small-Instruct-2409
+```
 
 
 
