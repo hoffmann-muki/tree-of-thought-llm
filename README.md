@@ -120,6 +120,28 @@ python run.py --task text --provider transformers --backend mistralai/Mistral-Sm
 ```
 
 
+### Tree-Aware Thought Overlap Analysis
+
+To quantify overlap across candidates (and estimate potential gains from prefix-sharing), run:
+
+```bash
+python scripts/analyze_thought_overlap.py --inputs "logs/text/*.json" --output_dir analysis/thought_overlap
+```
+
+This script reconstructs parent-child thought expansions at each ToT step and writes:
+
+- `analysis/thought_overlap/step_metrics.csv` (per-problem, per-step metrics)
+- `analysis/thought_overlap/run_metrics.csv` (per-problem aggregate metrics)
+- `analysis/thought_overlap/summary.json` (corpus-level summary + top overlap steps)
+
+Most useful fields for motivating prefix sharing:
+
+- `reusable_prefix_fraction_of_candidate_tokens`: upper-bound fraction of candidate token compute that can be skipped if sibling candidates reuse cached parent prefixes.
+- `reusable_fraction_of_parent_prefix_tokens`: fraction of parent-prefix compute that is redundant across siblings.
+- `pairwise_mean_lcp_ratio`: average normalized LCP overlap among all candidates.
+- `sibling_suffix_mean_lcp_ratio`: overlap among siblings after removing inherited parent prefixes.
+
+
 
 ## Paper Trajectories
 ``logs/`` contains all the trajectories from the paper's experiments, except for ``logs/game24/gpt-4_0.7_propose1_value3_greedy5_start900_end1000.json`` which was reproduced after the paper (as the original experiment was done in a notebook) and achieved a 69\% score instead of the original 74\% score due to randomness in GPT decoding. We hope to aggregate multiple runs in the future to account for sampling randomness and update the paper, but this shouldn't affect the main conclusions of the paper.
