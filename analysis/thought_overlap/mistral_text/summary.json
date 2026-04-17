@@ -1,6 +1,6 @@
 {
   "config": {
-    "tokenizer": "word",
+    "tokenizer": "hf:/pscratch/sd/h/hmuki/models/Mistral-Small-24B-Instruct-2501",
     "max_pairs": 50000,
     "min_candidates": 2,
     "seed": 0,
@@ -15,94 +15,173 @@
     "files": 1,
     "runs": 10,
     "steps": 20,
-    "candidate_tokens": 50035.0,
-    "parent_prefix_tokens": 19240.0,
-    "reusable_parent_prefix_tokens": 15392.0
+    "candidate_tokens": 63986.0,
+    "parent_prefix_tokens": 25645.0,
+    "reusable_parent_prefix_tokens": 20516.0
   },
   "aggregate": {
     "mean_num_candidates": 5.0,
-    "mean_duplicate_rate": 0.009999999999999998,
+    "mean_duplicate_rate": 0.0,
     "mean_parent_assignment_miss_rate": 0.0,
-    "mean_reusable_prefix_fraction_of_candidate_tokens": 0.22949234668453672,
-    "mean_reusable_group_prefix_fraction_of_candidate_tokens": 0.2307484028711607,
-    "corpus_reusable_prefix_fraction_of_candidate_tokens": 0.30762466273608474,
-    "corpus_reusable_group_prefix_fraction_of_candidate_tokens": 0.30842410312781054,
+    "mean_reusable_prefix_fraction_of_candidate_tokens": 0.24434656794761106,
+    "mean_reusable_group_prefix_fraction_of_candidate_tokens": 0.24506734260257224,
+    "mean_exact_parent_child_prefix_fraction_of_candidate_tokens": 0.30526506295822997,
+    "mean_sibling_shared_prefix_fraction_of_candidate_tokens": 0.0007207746549611267,
+    "corpus_reusable_prefix_fraction_of_candidate_tokens": 0.32063263838964773,
+    "corpus_reusable_group_prefix_fraction_of_candidate_tokens": 0.32113274778857875,
+    "corpus_exact_parent_child_prefix_fraction_of_candidate_tokens": 0.40055637170631075,
+    "corpus_sibling_shared_prefix_fraction_of_candidate_tokens": 0.0005001093989310161,
     "corpus_reusable_fraction_of_parent_prefix_tokens": 0.8,
-    "weighted_pairwise_lcp_ratio": 0.35588891075971163,
-    "weighted_sibling_suffix_lcp_ratio": 0.018134804316673653
+    "corpus_exact_parent_child_prefix_fraction_of_parent_tokens": 0.9994150906609476,
+    "corpus_sibling_shared_prefix_fraction_of_parent_tokens": 0.0012478065899785534,
+    "weighted_pairwise_lcp_ratio": 0.37433641483106966,
+    "weighted_sibling_suffix_lcp_ratio": 0.010402206511777454
   },
   "interpretation": {
     "reusable_prefix_fraction_of_candidate_tokens": "Upper-bound fraction of candidate token compute that could be skipped if sibling candidates reuse cached parent prefixes.",
     "reusable_group_prefix_fraction_of_candidate_tokens": "Upper-bound fraction of candidate token compute that could be skipped if siblings also share any additional common prefix beyond the parent.",
+    "exact_parent_child_prefix_fraction_of_candidate_tokens": "Exact model-token prefix overlap between parent and child, normalized by candidate length.",
+    "sibling_shared_prefix_fraction_of_candidate_tokens": "Exact shared-prefix reuse among siblings after removing the inherited parent prefix, normalized by candidate length.",
     "reusable_fraction_of_parent_prefix_tokens": "Fraction of parent-prefix compute that is redundant across siblings. Higher means stronger motivation for prefix sharing.",
+    "exact_parent_child_prefix_fraction_of_parent_tokens": "Exact model-token prefix overlap between parent and child, normalized by parent-prefix length.",
+    "sibling_shared_prefix_fraction_of_parent_tokens": "Sibling-only shared-prefix reuse beyond the parent prefix, normalized by parent-prefix length.",
     "pairwise_mean_lcp_ratio": "Average normalized longest-common-prefix overlap among all candidates in a step.",
     "sibling_suffix_mean_lcp_ratio": "Additional overlap among siblings after removing inherited parent prefixes."
   },
   "top_steps_by_reusable_prefix_fraction": [
     {
       "source_file": "logs/text/_pscratch_sd_h_hmuki_models_Mistral-Small-24B-Instruct-2501_1.0_sample5_vote5_greedy1_start0_end10.json",
+      "record_idx": 0,
+      "step": 1,
+      "num_candidates": 5,
+      "reusable_prefix_fraction_of_candidate_tokens": 0.7254833040421793,
+      "reusable_group_prefix_fraction_of_candidate_tokens": 0.7254833040421793,
+      "exact_parent_child_prefix_fraction_of_candidate_tokens": 0.9068541300527241,
+      "sibling_shared_prefix_fraction_of_candidate_tokens": 0.0,
+      "reusable_fraction_of_parent_prefix_tokens": 0.8,
+      "exact_parent_child_prefix_fraction_of_parent_tokens": 1.0,
+      "sibling_shared_prefix_fraction_of_parent_tokens": 0.0,
+      "pairwise_mean_lcp_ratio": 0.9333726618298008,
+      "sibling_suffix_mean_lcp_ratio": 0.03188995944017827
+    },
+    {
+      "source_file": "logs/text/_pscratch_sd_h_hmuki_models_Mistral-Small-24B-Instruct-2501_1.0_sample5_vote5_greedy1_start0_end10.json",
+      "record_idx": 7,
+      "step": 1,
+      "num_candidates": 5,
+      "reusable_prefix_fraction_of_candidate_tokens": 0.5242165242165242,
+      "reusable_group_prefix_fraction_of_candidate_tokens": 0.5242165242165242,
+      "exact_parent_child_prefix_fraction_of_candidate_tokens": 0.654985754985755,
+      "sibling_shared_prefix_fraction_of_candidate_tokens": 0.0,
+      "reusable_fraction_of_parent_prefix_tokens": 0.8,
+      "exact_parent_child_prefix_fraction_of_parent_tokens": 0.9995652173913043,
+      "sibling_shared_prefix_fraction_of_parent_tokens": 0.0,
+      "pairwise_mean_lcp_ratio": 0.8513886043305753,
+      "sibling_suffix_mean_lcp_ratio": 0.03863506419252559
+    },
+    {
+      "source_file": "logs/text/_pscratch_sd_h_hmuki_models_Mistral-Small-24B-Instruct-2501_1.0_sample5_vote5_greedy1_start0_end10.json",
       "record_idx": 1,
       "step": 1,
       "num_candidates": 5,
-      "reusable_prefix_fraction_of_candidate_tokens": 0.6579212916246215,
-      "reusable_group_prefix_fraction_of_candidate_tokens": 0.6579212916246215,
+      "reusable_prefix_fraction_of_candidate_tokens": 0.522120017520806,
+      "reusable_group_prefix_fraction_of_candidate_tokens": 0.522120017520806,
+      "exact_parent_child_prefix_fraction_of_candidate_tokens": 0.6517739816031537,
+      "sibling_shared_prefix_fraction_of_candidate_tokens": 0.0,
       "reusable_fraction_of_parent_prefix_tokens": 0.8,
-      "pairwise_mean_lcp_ratio": 0.9758816790156153,
-      "sibling_suffix_mean_lcp_ratio": 0.11428571428571428
+      "exact_parent_child_prefix_fraction_of_parent_tokens": 0.9986577181208054,
+      "sibling_shared_prefix_fraction_of_parent_tokens": 0.0,
+      "pairwise_mean_lcp_ratio": 0.8696912117962615,
+      "sibling_suffix_mean_lcp_ratio": 0.010229885057471265
     },
     {
       "source_file": "logs/text/_pscratch_sd_h_hmuki_models_Mistral-Small-24B-Instruct-2501_1.0_sample5_vote5_greedy1_start0_end10.json",
       "record_idx": 5,
       "step": 1,
       "num_candidates": 5,
-      "reusable_prefix_fraction_of_candidate_tokens": 0.6049586776859505,
-      "reusable_group_prefix_fraction_of_candidate_tokens": 0.6049586776859505,
+      "reusable_prefix_fraction_of_candidate_tokens": 0.5181208053691275,
+      "reusable_group_prefix_fraction_of_candidate_tokens": 0.5181208053691275,
+      "exact_parent_child_prefix_fraction_of_candidate_tokens": 0.6469798657718121,
+      "sibling_shared_prefix_fraction_of_candidate_tokens": 0.0,
       "reusable_fraction_of_parent_prefix_tokens": 0.8,
-      "pairwise_mean_lcp_ratio": 0.8991333652935201,
-      "sibling_suffix_mean_lcp_ratio": 0.0014285714285714286
-    },
-    {
-      "source_file": "logs/text/_pscratch_sd_h_hmuki_models_Mistral-Small-24B-Instruct-2501_1.0_sample5_vote5_greedy1_start0_end10.json",
-      "record_idx": 0,
-      "step": 1,
-      "num_candidates": 5,
-      "reusable_prefix_fraction_of_candidate_tokens": 0.580664119894211,
-      "reusable_group_prefix_fraction_of_candidate_tokens": 0.580664119894211,
-      "reusable_fraction_of_parent_prefix_tokens": 0.8,
-      "pairwise_mean_lcp_ratio": 0.9399401497199195,
-      "sibling_suffix_mean_lcp_ratio": 0.1
+      "exact_parent_child_prefix_fraction_of_parent_tokens": 0.9989637305699481,
+      "sibling_shared_prefix_fraction_of_parent_tokens": 0.0,
+      "pairwise_mean_lcp_ratio": 0.8018083076502156,
+      "sibling_suffix_mean_lcp_ratio": 0.0
     },
     {
       "source_file": "logs/text/_pscratch_sd_h_hmuki_models_Mistral-Small-24B-Instruct-2501_1.0_sample5_vote5_greedy1_start0_end10.json",
       "record_idx": 2,
       "step": 1,
       "num_candidates": 5,
-      "reusable_prefix_fraction_of_candidate_tokens": 0.5137002620919705,
-      "reusable_group_prefix_fraction_of_candidate_tokens": 0.5137002620919705,
+      "reusable_prefix_fraction_of_candidate_tokens": 0.4833916083916084,
+      "reusable_group_prefix_fraction_of_candidate_tokens": 0.4833916083916084,
+      "exact_parent_child_prefix_fraction_of_candidate_tokens": 0.6042395104895105,
+      "sibling_shared_prefix_fraction_of_candidate_tokens": 0.0,
       "reusable_fraction_of_parent_prefix_tokens": 0.8,
-      "pairwise_mean_lcp_ratio": 0.7453347145792171,
+      "exact_parent_child_prefix_fraction_of_parent_tokens": 1.0,
+      "sibling_shared_prefix_fraction_of_parent_tokens": 0.0,
+      "pairwise_mean_lcp_ratio": 0.7720737062834707,
       "sibling_suffix_mean_lcp_ratio": 0.0
+    },
+    {
+      "source_file": "logs/text/_pscratch_sd_h_hmuki_models_Mistral-Small-24B-Instruct-2501_1.0_sample5_vote5_greedy1_start0_end10.json",
+      "record_idx": 9,
+      "step": 1,
+      "num_candidates": 5,
+      "reusable_prefix_fraction_of_candidate_tokens": 0.4781834372217275,
+      "reusable_group_prefix_fraction_of_candidate_tokens": 0.4781834372217275,
+      "exact_parent_child_prefix_fraction_of_candidate_tokens": 0.597506678539626,
+      "sibling_shared_prefix_fraction_of_candidate_tokens": 0.0,
+      "reusable_fraction_of_parent_prefix_tokens": 0.8,
+      "exact_parent_child_prefix_fraction_of_parent_tokens": 0.9996275605214152,
+      "sibling_shared_prefix_fraction_of_parent_tokens": 0.0,
+      "pairwise_mean_lcp_ratio": 0.8456762597268442,
+      "sibling_suffix_mean_lcp_ratio": 0.0037037037037037034
     },
     {
       "source_file": "logs/text/_pscratch_sd_h_hmuki_models_Mistral-Small-24B-Instruct-2501_1.0_sample5_vote5_greedy1_start0_end10.json",
       "record_idx": 8,
       "step": 1,
       "num_candidates": 5,
-      "reusable_prefix_fraction_of_candidate_tokens": 0.4678040726472207,
-      "reusable_group_prefix_fraction_of_candidate_tokens": 0.4678040726472207,
+      "reusable_prefix_fraction_of_candidate_tokens": 0.43757725587144625,
+      "reusable_group_prefix_fraction_of_candidate_tokens": 0.43757725587144625,
+      "exact_parent_child_prefix_fraction_of_candidate_tokens": 0.5466625463535228,
+      "sibling_shared_prefix_fraction_of_candidate_tokens": 0.0,
       "reusable_fraction_of_parent_prefix_tokens": 0.8,
-      "pairwise_mean_lcp_ratio": 0.6818007670578303,
-      "sibling_suffix_mean_lcp_ratio": 0.026765799256505574
+      "exact_parent_child_prefix_fraction_of_parent_tokens": 0.9994350282485875,
+      "sibling_shared_prefix_fraction_of_parent_tokens": 0.0,
+      "pairwise_mean_lcp_ratio": 0.7160644136754506,
+      "sibling_suffix_mean_lcp_ratio": 0.030267855456279868
+    },
+    {
+      "source_file": "logs/text/_pscratch_sd_h_hmuki_models_Mistral-Small-24B-Instruct-2501_1.0_sample5_vote5_greedy1_start0_end10.json",
+      "record_idx": 6,
+      "step": 1,
+      "num_candidates": 5,
+      "reusable_prefix_fraction_of_candidate_tokens": 0.4041983947314262,
+      "reusable_group_prefix_fraction_of_candidate_tokens": 0.4041983947314262,
+      "exact_parent_child_prefix_fraction_of_candidate_tokens": 0.5048363860876723,
+      "sibling_shared_prefix_fraction_of_candidate_tokens": 0.0,
+      "reusable_fraction_of_parent_prefix_tokens": 0.8,
+      "exact_parent_child_prefix_fraction_of_parent_tokens": 0.9991853360488798,
+      "sibling_shared_prefix_fraction_of_parent_tokens": 0.0,
+      "pairwise_mean_lcp_ratio": 0.5943499771948696,
+      "sibling_suffix_mean_lcp_ratio": 0.020496894409937887
     },
     {
       "source_file": "logs/text/_pscratch_sd_h_hmuki_models_Mistral-Small-24B-Instruct-2501_1.0_sample5_vote5_greedy1_start0_end10.json",
       "record_idx": 3,
       "step": 1,
       "num_candidates": 5,
-      "reusable_prefix_fraction_of_candidate_tokens": 0.46696296296296297,
-      "reusable_group_prefix_fraction_of_candidate_tokens": 0.46696296296296297,
+      "reusable_prefix_fraction_of_candidate_tokens": 0.40353400452023835,
+      "reusable_group_prefix_fraction_of_candidate_tokens": 0.40353400452023835,
+      "exact_parent_child_prefix_fraction_of_candidate_tokens": 0.5040065748921306,
+      "sibling_shared_prefix_fraction_of_candidate_tokens": 0.0,
       "reusable_fraction_of_parent_prefix_tokens": 0.8,
-      "pairwise_mean_lcp_ratio": 0.8365012131703844,
+      "exact_parent_child_prefix_fraction_of_parent_tokens": 0.9991853360488798,
+      "sibling_shared_prefix_fraction_of_parent_tokens": 0.0,
+      "pairwise_mean_lcp_ratio": 0.5160214291556925,
       "sibling_suffix_mean_lcp_ratio": 0.0
     },
     {
@@ -110,44 +189,15 @@
       "record_idx": 4,
       "step": 1,
       "num_candidates": 5,
-      "reusable_prefix_fraction_of_candidate_tokens": 0.4167758846657929,
-      "reusable_group_prefix_fraction_of_candidate_tokens": 0.4167758846657929,
+      "reusable_prefix_fraction_of_candidate_tokens": 0.3901060070671378,
+      "reusable_group_prefix_fraction_of_candidate_tokens": 0.3901060070671378,
+      "exact_parent_child_prefix_fraction_of_candidate_tokens": 0.48745583038869256,
+      "sibling_shared_prefix_fraction_of_candidate_tokens": 0.0,
       "reusable_fraction_of_parent_prefix_tokens": 0.8,
-      "pairwise_mean_lcp_ratio": 0.6623639658276701,
-      "sibling_suffix_mean_lcp_ratio": 0.0023508738601823705
-    },
-    {
-      "source_file": "logs/text/_pscratch_sd_h_hmuki_models_Mistral-Small-24B-Instruct-2501_1.0_sample5_vote5_greedy1_start0_end10.json",
-      "record_idx": 9,
-      "step": 1,
-      "num_candidates": 5,
-      "reusable_prefix_fraction_of_candidate_tokens": 0.4092535177677081,
-      "reusable_group_prefix_fraction_of_candidate_tokens": 0.4092535177677081,
-      "reusable_fraction_of_parent_prefix_tokens": 0.8,
-      "pairwise_mean_lcp_ratio": 0.6032449900191871,
-      "sibling_suffix_mean_lcp_ratio": 0.00044742729306487697
-    },
-    {
-      "source_file": "logs/text/_pscratch_sd_h_hmuki_models_Mistral-Small-24B-Instruct-2501_1.0_sample5_vote5_greedy1_start0_end10.json",
-      "record_idx": 6,
-      "step": 1,
-      "num_candidates": 5,
-      "reusable_prefix_fraction_of_candidate_tokens": 0.33450175262894344,
-      "reusable_group_prefix_fraction_of_candidate_tokens": 0.33450175262894344,
-      "reusable_fraction_of_parent_prefix_tokens": 0.8,
-      "pairwise_mean_lcp_ratio": 0.4839188203817706,
-      "sibling_suffix_mean_lcp_ratio": 0.012937062937062937
-    },
-    {
-      "source_file": "logs/text/_pscratch_sd_h_hmuki_models_Mistral-Small-24B-Instruct-2501_1.0_sample5_vote5_greedy1_start0_end10.json",
-      "record_idx": 7,
-      "step": 1,
-      "num_candidates": 5,
-      "reusable_prefix_fraction_of_candidate_tokens": 0.13730439172135286,
-      "reusable_group_prefix_fraction_of_candidate_tokens": 0.1393235739525492,
-      "reusable_fraction_of_parent_prefix_tokens": 0.8,
-      "pairwise_mean_lcp_ratio": 0.19293431863494298,
-      "sibling_suffix_mean_lcp_ratio": 0.007756405778196469
+      "exact_parent_child_prefix_fraction_of_parent_tokens": 0.9996376811594203,
+      "sibling_shared_prefix_fraction_of_parent_tokens": 0.0,
+      "pairwise_mean_lcp_ratio": 0.5136697252699834,
+      "sibling_suffix_mean_lcp_ratio": 0.00020876826722338203
     },
     {
       "source_file": "logs/text/_pscratch_sd_h_hmuki_models_Mistral-Small-24B-Instruct-2501_1.0_sample5_vote5_greedy1_start0_end10.json",
@@ -156,9 +206,13 @@
       "num_candidates": 5,
       "reusable_prefix_fraction_of_candidate_tokens": 0.0,
       "reusable_group_prefix_fraction_of_candidate_tokens": 0.0,
+      "exact_parent_child_prefix_fraction_of_candidate_tokens": 0.0,
+      "sibling_shared_prefix_fraction_of_candidate_tokens": 0.0,
       "reusable_fraction_of_parent_prefix_tokens": 0.0,
-      "pairwise_mean_lcp_ratio": 0.005616988165784522,
-      "sibling_suffix_mean_lcp_ratio": 0.005616988165784522
+      "exact_parent_child_prefix_fraction_of_parent_tokens": 0.0,
+      "sibling_shared_prefix_fraction_of_parent_tokens": 0.0,
+      "pairwise_mean_lcp_ratio": 0.0041085950022453814,
+      "sibling_suffix_mean_lcp_ratio": 0.0041085950022453814
     },
     {
       "source_file": "logs/text/_pscratch_sd_h_hmuki_models_Mistral-Small-24B-Instruct-2501_1.0_sample5_vote5_greedy1_start0_end10.json",
@@ -167,9 +221,13 @@
       "num_candidates": 5,
       "reusable_prefix_fraction_of_candidate_tokens": 0.0,
       "reusable_group_prefix_fraction_of_candidate_tokens": 0.0,
+      "exact_parent_child_prefix_fraction_of_candidate_tokens": 0.0,
+      "sibling_shared_prefix_fraction_of_candidate_tokens": 0.0,
       "reusable_fraction_of_parent_prefix_tokens": 0.0,
-      "pairwise_mean_lcp_ratio": 0.004923776331590345,
-      "sibling_suffix_mean_lcp_ratio": 0.004923776331590345
+      "exact_parent_child_prefix_fraction_of_parent_tokens": 0.0,
+      "sibling_shared_prefix_fraction_of_parent_tokens": 0.0,
+      "pairwise_mean_lcp_ratio": 0.0037818393933501853,
+      "sibling_suffix_mean_lcp_ratio": 0.0037818393933501853
     },
     {
       "source_file": "logs/text/_pscratch_sd_h_hmuki_models_Mistral-Small-24B-Instruct-2501_1.0_sample5_vote5_greedy1_start0_end10.json",
@@ -178,9 +236,13 @@
       "num_candidates": 5,
       "reusable_prefix_fraction_of_candidate_tokens": 0.0,
       "reusable_group_prefix_fraction_of_candidate_tokens": 0.0,
+      "exact_parent_child_prefix_fraction_of_candidate_tokens": 0.0,
+      "sibling_shared_prefix_fraction_of_candidate_tokens": 0.0,
       "reusable_fraction_of_parent_prefix_tokens": 0.0,
-      "pairwise_mean_lcp_ratio": 0.007245678036992285,
-      "sibling_suffix_mean_lcp_ratio": 0.007245678036992285
+      "exact_parent_child_prefix_fraction_of_parent_tokens": 0.0,
+      "sibling_shared_prefix_fraction_of_parent_tokens": 0.0,
+      "pairwise_mean_lcp_ratio": 0.008061681453316434,
+      "sibling_suffix_mean_lcp_ratio": 0.008061681453316434
     },
     {
       "source_file": "logs/text/_pscratch_sd_h_hmuki_models_Mistral-Small-24B-Instruct-2501_1.0_sample5_vote5_greedy1_start0_end10.json",
@@ -189,9 +251,13 @@
       "num_candidates": 5,
       "reusable_prefix_fraction_of_candidate_tokens": 0.0,
       "reusable_group_prefix_fraction_of_candidate_tokens": 0.0,
+      "exact_parent_child_prefix_fraction_of_candidate_tokens": 0.0,
+      "sibling_shared_prefix_fraction_of_candidate_tokens": 0.0,
       "reusable_fraction_of_parent_prefix_tokens": 0.0,
-      "pairwise_mean_lcp_ratio": 0.009497609165100823,
-      "sibling_suffix_mean_lcp_ratio": 0.009497609165100823
+      "exact_parent_child_prefix_fraction_of_parent_tokens": 0.0,
+      "sibling_shared_prefix_fraction_of_parent_tokens": 0.0,
+      "pairwise_mean_lcp_ratio": 0.0037610355523741354,
+      "sibling_suffix_mean_lcp_ratio": 0.0037610355523741354
     },
     {
       "source_file": "logs/text/_pscratch_sd_h_hmuki_models_Mistral-Small-24B-Instruct-2501_1.0_sample5_vote5_greedy1_start0_end10.json",
@@ -199,10 +265,14 @@
       "step": 0,
       "num_candidates": 5,
       "reusable_prefix_fraction_of_candidate_tokens": 0.0,
-      "reusable_group_prefix_fraction_of_candidate_tokens": 0.0071090047393364926,
+      "reusable_group_prefix_fraction_of_candidate_tokens": 0.0,
+      "exact_parent_child_prefix_fraction_of_candidate_tokens": 0.0,
+      "sibling_shared_prefix_fraction_of_candidate_tokens": 0.0,
       "reusable_fraction_of_parent_prefix_tokens": 0.0,
-      "pairwise_mean_lcp_ratio": 0.0169584518951323,
-      "sibling_suffix_mean_lcp_ratio": 0.0169584518951323
+      "exact_parent_child_prefix_fraction_of_parent_tokens": 0.0,
+      "sibling_shared_prefix_fraction_of_parent_tokens": 0.0,
+      "pairwise_mean_lcp_ratio": 0.005491037376048818,
+      "sibling_suffix_mean_lcp_ratio": 0.005491037376048818
     },
     {
       "source_file": "logs/text/_pscratch_sd_h_hmuki_models_Mistral-Small-24B-Instruct-2501_1.0_sample5_vote5_greedy1_start0_end10.json",
@@ -211,9 +281,13 @@
       "num_candidates": 5,
       "reusable_prefix_fraction_of_candidate_tokens": 0.0,
       "reusable_group_prefix_fraction_of_candidate_tokens": 0.0,
+      "exact_parent_child_prefix_fraction_of_candidate_tokens": 0.0,
+      "sibling_shared_prefix_fraction_of_candidate_tokens": 0.0,
       "reusable_fraction_of_parent_prefix_tokens": 0.0,
-      "pairwise_mean_lcp_ratio": 0.005249716602720614,
-      "sibling_suffix_mean_lcp_ratio": 0.005249716602720614
+      "exact_parent_child_prefix_fraction_of_parent_tokens": 0.0,
+      "sibling_shared_prefix_fraction_of_parent_tokens": 0.0,
+      "pairwise_mean_lcp_ratio": 0.0055228590019697505,
+      "sibling_suffix_mean_lcp_ratio": 0.0055228590019697505
     },
     {
       "source_file": "logs/text/_pscratch_sd_h_hmuki_models_Mistral-Small-24B-Instruct-2501_1.0_sample5_vote5_greedy1_start0_end10.json",
@@ -221,10 +295,14 @@
       "step": 0,
       "num_candidates": 5,
       "reusable_prefix_fraction_of_candidate_tokens": 0.0,
-      "reusable_group_prefix_fraction_of_candidate_tokens": 0.00860832137733142,
+      "reusable_group_prefix_fraction_of_candidate_tokens": 0.0,
+      "exact_parent_child_prefix_fraction_of_candidate_tokens": 0.0,
+      "sibling_shared_prefix_fraction_of_candidate_tokens": 0.0,
       "reusable_fraction_of_parent_prefix_tokens": 0.0,
-      "pairwise_mean_lcp_ratio": 0.01576274969073993,
-      "sibling_suffix_mean_lcp_ratio": 0.01576274969073993
+      "exact_parent_child_prefix_fraction_of_parent_tokens": 0.0,
+      "sibling_shared_prefix_fraction_of_parent_tokens": 0.0,
+      "pairwise_mean_lcp_ratio": 0.005301498212008197,
+      "sibling_suffix_mean_lcp_ratio": 0.005301498212008197
     },
     {
       "source_file": "logs/text/_pscratch_sd_h_hmuki_models_Mistral-Small-24B-Instruct-2501_1.0_sample5_vote5_greedy1_start0_end10.json",
@@ -232,10 +310,14 @@
       "step": 0,
       "num_candidates": 5,
       "reusable_prefix_fraction_of_candidate_tokens": 0.0,
-      "reusable_group_prefix_fraction_of_candidate_tokens": 0.0073846153846153844,
+      "reusable_group_prefix_fraction_of_candidate_tokens": 0.0,
+      "exact_parent_child_prefix_fraction_of_candidate_tokens": 0.0,
+      "sibling_shared_prefix_fraction_of_candidate_tokens": 0.0,
       "reusable_fraction_of_parent_prefix_tokens": 0.0,
-      "pairwise_mean_lcp_ratio": 0.022997447873152593,
-      "sibling_suffix_mean_lcp_ratio": 0.022997447873152593
+      "exact_parent_child_prefix_fraction_of_parent_tokens": 0.0,
+      "sibling_shared_prefix_fraction_of_parent_tokens": 0.0,
+      "pairwise_mean_lcp_ratio": 0.008060424391069552,
+      "sibling_suffix_mean_lcp_ratio": 0.008060424391069552
     },
     {
       "source_file": "logs/text/_pscratch_sd_h_hmuki_models_Mistral-Small-24B-Instruct-2501_1.0_sample5_vote5_greedy1_start0_end10.json",
@@ -243,10 +325,14 @@
       "step": 0,
       "num_candidates": 5,
       "reusable_prefix_fraction_of_candidate_tokens": 0.0,
-      "reusable_group_prefix_fraction_of_candidate_tokens": 0.0,
+      "reusable_group_prefix_fraction_of_candidate_tokens": 0.009140767824497258,
+      "exact_parent_child_prefix_fraction_of_candidate_tokens": 0.0,
+      "sibling_shared_prefix_fraction_of_candidate_tokens": 0.009140767824497258,
       "reusable_fraction_of_parent_prefix_tokens": 0.0,
-      "pairwise_mean_lcp_ratio": 0.0045098210612916495,
-      "sibling_suffix_mean_lcp_ratio": 0.0045098210612916495
+      "exact_parent_child_prefix_fraction_of_parent_tokens": 0.0,
+      "sibling_shared_prefix_fraction_of_parent_tokens": 0.0,
+      "pairwise_mean_lcp_ratio": 0.01664680089288998,
+      "sibling_suffix_mean_lcp_ratio": 0.01664680089288998
     },
     {
       "source_file": "logs/text/_pscratch_sd_h_hmuki_models_Mistral-Small-24B-Instruct-2501_1.0_sample5_vote5_greedy1_start0_end10.json",
@@ -254,10 +340,14 @@
       "step": 0,
       "num_candidates": 5,
       "reusable_prefix_fraction_of_candidate_tokens": 0.0,
-      "reusable_group_prefix_fraction_of_candidate_tokens": 0.0,
+      "reusable_group_prefix_fraction_of_candidate_tokens": 0.005274725274725275,
+      "exact_parent_child_prefix_fraction_of_candidate_tokens": 0.0,
+      "sibling_shared_prefix_fraction_of_candidate_tokens": 0.005274725274725275,
       "reusable_fraction_of_parent_prefix_tokens": 0.0,
-      "pairwise_mean_lcp_ratio": 0.003961992671670091,
-      "sibling_suffix_mean_lcp_ratio": 0.003961992671670091
+      "exact_parent_child_prefix_fraction_of_parent_tokens": 0.0,
+      "sibling_shared_prefix_fraction_of_parent_tokens": 0.0,
+      "pairwise_mean_lcp_ratio": 0.011876228432956668,
+      "sibling_suffix_mean_lcp_ratio": 0.011876228432956668
     }
   ]
 }
