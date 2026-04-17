@@ -34,7 +34,7 @@ class Game24Task(Task):
         self.value_cache = {}
         self.steps = 4
         self.stops = ['\n'] * 4
-        self.propose_max_tokens = 64
+        self.propose_max_tokens = 128
         self.value_max_tokens = 16
         self.vote_max_tokens = 16
 
