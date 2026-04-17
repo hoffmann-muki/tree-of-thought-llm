@@ -23,7 +23,7 @@ import re
 import statistics
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Sequence, Tuple
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 
 WORD_RE = re.compile(r"\S+")
@@ -38,15 +38,33 @@ def normalize_text(value: object) -> str:
     return text
 
 
-def tokenize(text: str, mode: str) -> List[str]:
-    if mode == "char":
-        return list(text)
-    if mode == "word":
-        return WORD_RE.findall(text)
-    raise ValueError(f"Unsupported tokenizer mode: {mode}")
+def build_tokenizer(args: argparse.Namespace) -> Tuple[Callable[[str], List[Any]], str]:
+    if args.tokenizer == "word":
+        return lambda text: WORD_RE.findall(text), "word"
+    if args.tokenizer == "char":
+        return lambda text: list(text), "char"
+    if args.tokenizer == "hf":
+        if not args.tokenizer_name_or_path:
+            raise ValueError("--tokenizer_name_or_path is required when --tokenizer hf is used")
+        try:
+            from transformers import AutoTokenizer  # type: ignore[import-not-found]
+        except ImportError as exc:
+            raise ImportError(
+                "transformers is required for --tokenizer hf"
+            ) from exc
+
+        tokenizer = AutoTokenizer.from_pretrained(
+            args.tokenizer_name_or_path,
+            local_files_only=True,
+            trust_remote_code=args.hf_trust_remote_code,
+        )
+
+        return lambda text: tokenizer.encode(text, add_special_tokens=False), f"hf:{args.tokenizer_name_or_path}"
+
+    raise ValueError(f"Unsupported tokenizer mode: {args.tokenizer}")
 
 
-def lcp_len(seq_a: Sequence[str], seq_b: Sequence[str]) -> int:
+def lcp_len(seq_a: Sequence[Any], seq_b: Sequence[Any]) -> int:
     n = min(len(seq_a), len(seq_b))
     i = 0
     while i < n and seq_a[i] == seq_b[i]:
@@ -54,7 +72,7 @@ def lcp_len(seq_a: Sequence[str], seq_b: Sequence[str]) -> int:
     return i
 
 
-def lcp_len_many(token_lists: Sequence[Sequence[str]]) -> int:
+def lcp_len_many(token_lists: Sequence[Sequence[Any]]) -> int:
     if not token_lists:
         return 0
     prefix = list(token_lists[0])
@@ -64,6 +82,11 @@ def lcp_len_many(token_lists: Sequence[Sequence[str]]) -> int:
             return 0
         prefix = prefix[:prefix_len]
     return len(prefix)
+
+
+def token_prefix_overlap(prefix_tokens: Sequence[Any], full_tokens: Sequence[Any]) -> int:
+    """Return exact token-prefix overlap length between two token sequences."""
+    return lcp_len(prefix_tokens, full_tokens)
 
 
 def pair_from_linear_index(index: int, n_items: int) -> Tuple[int, int]:
@@ -86,7 +109,7 @@ class PairwiseStats:
 
 
 def compute_pairwise_stats(
-    tokenized_texts: Sequence[Sequence[str]],
+    tokenized_texts: Sequence[Sequence[object]],
     max_pairs: int,
     rng: random.Random,
 ) -> PairwiseStats:
@@ -170,7 +193,7 @@ def expand_input_paths(inputs: Sequence[str]) -> List[str]:
     return sorted(set(resolved))
 
 
-def step_to_int(step: object, fallback: int) -> int:
+def step_to_int(step: Any, fallback: int) -> int:
     if isinstance(step, int):
         return step
     try:
@@ -179,10 +202,11 @@ def step_to_int(step: object, fallback: int) -> int:
         return fallback
 
 
-def run_analysis(args: argparse.Namespace) -> Tuple[List[Dict[str, object]], List[Dict[str, object]], Dict[str, object]]:
+def run_analysis(args: argparse.Namespace) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], Dict[str, Any]]:
     rng = random.Random(args.seed)
-    step_rows: List[Dict[str, object]] = []
-    run_rows: List[Dict[str, object]] = []
+    step_rows: List[Dict[str, Any]] = []
+    run_rows: List[Dict[str, Any]] = []
+    tokenize_text, tokenizer_label = build_tokenizer(args)
 
     paths = expand_input_paths(args.inputs)
     if not paths:
@@ -196,7 +220,7 @@ def run_analysis(args: argparse.Namespace) -> Tuple[List[Dict[str, object]], Lis
                 continue
 
             idx_value = record.get("idx", record_id)
-            run_step_rows: List[Dict[str, object]] = []
+            run_step_rows: List[Dict[str, Any]] = []
 
             for fallback_step, step_obj in enumerate(steps):
                 if not isinstance(step_obj, dict):
@@ -210,7 +234,7 @@ def run_analysis(args: argparse.Namespace) -> Tuple[List[Dict[str, object]], Lis
                 if len(candidates) < args.min_candidates:
                     continue
 
-                candidate_token_lists = [tokenize(text, args.tokenizer) for text in candidates]
+                candidate_token_lists: List[List[Any]] = [tokenize_text(text) for text in candidates]
                 candidate_token_lens = [len(tokens) for tokens in candidate_token_lists]
 
                 assignments, assignment_misses = assign_parents(candidates, parents)
@@ -219,27 +243,31 @@ def run_analysis(args: argparse.Namespace) -> Tuple[List[Dict[str, object]], Lis
                     if parent is not None:
                         children_by_parent[parent].append(child_idx)
 
-                parent_token_len_cache = {
-                    parent: len(tokenize(parent, args.tokenizer))
-                    for parent in children_by_parent
-                }
+                parent_tokens_cache = {parent: tokenize_text(parent) for parent in children_by_parent}
 
                 total_candidate_tokens = sum(candidate_token_lens)
                 total_parent_prefix_tokens = 0
                 reusable_parent_prefix_tokens = 0
                 reusable_group_prefix_tokens = 0
+                exact_parent_child_prefix_tokens = 0
+                exact_sibling_shared_prefix_tokens = 0
                 branching_counts: List[int] = []
 
                 for parent, child_indices in children_by_parent.items():
+                    parent_tokens = parent_tokens_cache[parent]
                     branch_size = len(child_indices)
                     if branch_size <= 0:
                         continue
                     branching_counts.append(branch_size)
 
-                    parent_token_len = parent_token_len_cache[parent]
+                    parent_token_len = len(parent_tokens)
                     total_parent_prefix_tokens += branch_size * parent_token_len
                     if branch_size > 1:
                         reusable_parent_prefix_tokens += (branch_size - 1) * parent_token_len
+
+                    for child_idx in child_indices:
+                        child_tokens = candidate_token_lists[child_idx]
+                        exact_parent_child_prefix_tokens += token_prefix_overlap(parent_tokens, child_tokens)
 
                 duplicate_rate = 1.0 - (len(set(candidates)) / len(candidates))
                 pairwise = compute_pairwise_stats(candidate_token_lists, args.max_pairs, rng)
@@ -253,16 +281,17 @@ def run_analysis(args: argparse.Namespace) -> Tuple[List[Dict[str, object]], Lis
                 for parent, child_indices in children_by_parent.items():
                     if len(child_indices) < 2:
                         continue
-                    parent_char_len = len(parent)
+                    parent_tokens = parent_tokens_cache[parent]
                     suffixes: List[List[str]] = []
                     for child_idx in child_indices:
-                        suffixes.append(tokenize(candidates[child_idx][parent_char_len:], args.tokenizer))
+                        child_tokens = candidate_token_lists[child_idx]
+                        parent_child_prefix_len = token_prefix_overlap(parent_tokens, child_tokens)
+                        suffixes.append(child_tokens[parent_child_prefix_len:])
 
                     shared_suffix_tokens = lcp_len_many(suffixes)
                     sibling_shared_suffix_tokens_sum += shared_suffix_tokens
-                    reusable_group_prefix_tokens += (len(child_indices) - 1) * (
-                        len(tokenize(parent, args.tokenizer)) + shared_suffix_tokens
-                    )
+                    exact_sibling_shared_prefix_tokens += (len(child_indices) - 1) * shared_suffix_tokens
+                    reusable_group_prefix_tokens += (len(child_indices) - 1) * (len(parent_tokens) + shared_suffix_tokens)
 
                     sibling_stats = compute_pairwise_stats(suffixes, args.max_pairs, rng)
                     sibling_pair_total += sibling_stats.pair_count_total
@@ -270,7 +299,7 @@ def run_analysis(args: argparse.Namespace) -> Tuple[List[Dict[str, object]], Lis
                     sibling_lcp_sum += sibling_stats.mean_lcp_tokens * sibling_stats.pair_count_used
                     sibling_ratio_sum += sibling_stats.mean_lcp_ratio * sibling_stats.pair_count_used
 
-                selected_token_lists = [tokenize(text, args.tokenizer) for text in selected]
+                selected_token_lists = [tokenize_text(text) for text in selected]
                 selected_pair_stats = compute_pairwise_stats(selected_token_lists, args.max_pairs, rng)
 
                 parent_prefix_fraction = (
@@ -288,8 +317,28 @@ def run_analysis(args: argparse.Namespace) -> Tuple[List[Dict[str, object]], Lis
                     if total_parent_prefix_tokens > 0
                     else 0.0
                 )
+                exact_parent_child_prefix_fraction_of_candidate_tokens = (
+                    (exact_parent_child_prefix_tokens / total_candidate_tokens)
+                    if total_candidate_tokens > 0
+                    else 0.0
+                )
+                exact_parent_child_prefix_fraction_of_parent_tokens = (
+                    (exact_parent_child_prefix_tokens / total_parent_prefix_tokens)
+                    if total_parent_prefix_tokens > 0
+                    else 0.0
+                )
+                sibling_shared_prefix_fraction_of_candidate_tokens = (
+                    (exact_sibling_shared_prefix_tokens / total_candidate_tokens)
+                    if total_candidate_tokens > 0
+                    else 0.0
+                )
+                sibling_shared_prefix_fraction_of_parent_tokens = (
+                    (exact_sibling_shared_prefix_tokens / total_parent_prefix_tokens)
+                    if total_parent_prefix_tokens > 0
+                    else 0.0
+                )
 
-                row: Dict[str, object] = {
+                row: Dict[str, Any] = {
                     "source_file": path,
                     "record_idx": idx_value,
                     "step": step_id,
@@ -313,12 +362,18 @@ def run_analysis(args: argparse.Namespace) -> Tuple[List[Dict[str, object]], Lis
                     "reusable_parent_prefix_tokens": reusable_parent_prefix_tokens,
                     "reusable_group_prefix_tokens": reusable_group_prefix_tokens,
                     "sibling_shared_suffix_tokens": sibling_shared_suffix_tokens_sum,
+                    "exact_parent_child_prefix_tokens": exact_parent_child_prefix_tokens,
+                    "exact_sibling_shared_prefix_tokens": exact_sibling_shared_prefix_tokens,
                     "parent_prefix_fraction_of_candidate_tokens": parent_prefix_fraction,
                     "reusable_prefix_fraction_of_candidate_tokens": reusable_vs_candidate,
                     "reusable_fraction_of_parent_prefix_tokens": reusable_vs_parent_prefix,
                     "reusable_group_prefix_fraction_of_candidate_tokens": (
                         reusable_group_prefix_tokens / total_candidate_tokens if total_candidate_tokens > 0 else 0.0
                     ),
+                    "exact_parent_child_prefix_fraction_of_candidate_tokens": exact_parent_child_prefix_fraction_of_candidate_tokens,
+                    "exact_parent_child_prefix_fraction_of_parent_tokens": exact_parent_child_prefix_fraction_of_parent_tokens,
+                    "sibling_shared_prefix_fraction_of_candidate_tokens": sibling_shared_prefix_fraction_of_candidate_tokens,
+                    "sibling_shared_prefix_fraction_of_parent_tokens": sibling_shared_prefix_fraction_of_parent_tokens,
                     "pair_count_total": pairwise.pair_count_total,
                     "pair_count_used": pairwise.pair_count_used,
                     "pairwise_mean_lcp_tokens": pairwise.mean_lcp_tokens,
@@ -345,6 +400,8 @@ def run_analysis(args: argparse.Namespace) -> Tuple[List[Dict[str, object]], Lis
                 run_parent_tokens = sum(float(row["total_parent_prefix_tokens"]) for row in run_step_rows)
                 run_reusable_tokens = sum(float(row["reusable_parent_prefix_tokens"]) for row in run_step_rows)
                 run_reusable_group_tokens = sum(float(row["reusable_group_prefix_tokens"]) for row in run_step_rows)
+                run_exact_parent_child_tokens = sum(float(row["exact_parent_child_prefix_tokens"]) for row in run_step_rows)
+                run_exact_sibling_shared_tokens = sum(float(row["exact_sibling_shared_prefix_tokens"]) for row in run_step_rows)
                 run_pairs_used = sum(int(row["pair_count_used"]) for row in run_step_rows)
                 run_pairwise_lcp_weighted = sum(
                     float(row["pairwise_mean_lcp_ratio"]) * int(row["pair_count_used"]) for row in run_step_rows
@@ -358,6 +415,8 @@ def run_analysis(args: argparse.Namespace) -> Tuple[List[Dict[str, object]], Lis
                         "parent_prefix_tokens": run_parent_tokens,
                         "reusable_parent_prefix_tokens": run_reusable_tokens,
                         "reusable_group_prefix_tokens": run_reusable_group_tokens,
+                        "exact_parent_child_prefix_tokens": run_exact_parent_child_tokens,
+                        "exact_sibling_shared_prefix_tokens": run_exact_sibling_shared_tokens,
                         "reusable_prefix_fraction_of_candidate_tokens": (
                             run_reusable_tokens / run_candidate_tokens if run_candidate_tokens > 0 else 0.0
                         ),
@@ -366,6 +425,18 @@ def run_analysis(args: argparse.Namespace) -> Tuple[List[Dict[str, object]], Lis
                         ),
                         "reusable_group_prefix_fraction_of_candidate_tokens": (
                             run_reusable_group_tokens / run_candidate_tokens if run_candidate_tokens > 0 else 0.0
+                        ),
+                        "exact_parent_child_prefix_fraction_of_candidate_tokens": (
+                            run_exact_parent_child_tokens / run_candidate_tokens if run_candidate_tokens > 0 else 0.0
+                        ),
+                        "exact_parent_child_prefix_fraction_of_parent_tokens": (
+                            run_exact_parent_child_tokens / run_parent_tokens if run_parent_tokens > 0 else 0.0
+                        ),
+                        "sibling_shared_prefix_fraction_of_candidate_tokens": (
+                            run_exact_sibling_shared_tokens / run_candidate_tokens if run_candidate_tokens > 0 else 0.0
+                        ),
+                        "sibling_shared_prefix_fraction_of_parent_tokens": (
+                            run_exact_sibling_shared_tokens / run_parent_tokens if run_parent_tokens > 0 else 0.0
                         ),
                         "weighted_pairwise_lcp_ratio": (
                             run_pairwise_lcp_weighted / run_pairs_used if run_pairs_used > 0 else 0.0
@@ -383,6 +454,8 @@ def run_analysis(args: argparse.Namespace) -> Tuple[List[Dict[str, object]], Lis
     total_parent_tokens = sum(float(row["total_parent_prefix_tokens"]) for row in step_rows)
     total_reusable_tokens = sum(float(row["reusable_parent_prefix_tokens"]) for row in step_rows)
     total_reusable_group_tokens = sum(float(row["reusable_group_prefix_tokens"]) for row in step_rows)
+    total_exact_parent_child_tokens = sum(float(row["exact_parent_child_prefix_tokens"]) for row in step_rows)
+    total_exact_sibling_shared_tokens = sum(float(row["exact_sibling_shared_prefix_tokens"]) for row in step_rows)
 
     total_pair_count_used = sum(int(row["pair_count_used"]) for row in step_rows)
     weighted_pairwise_ratio_sum = sum(
@@ -400,9 +473,9 @@ def run_analysis(args: argparse.Namespace) -> Tuple[List[Dict[str, object]], Lis
         reverse=True,
     )[: args.top_k]
 
-    summary: Dict[str, object] = {
+    summary: Dict[str, Any] = {
         "config": {
-            "tokenizer": args.tokenizer,
+            "tokenizer": tokenizer_label,
             "max_pairs": args.max_pairs,
             "min_candidates": args.min_candidates,
             "seed": args.seed,
@@ -429,14 +502,32 @@ def run_analysis(args: argparse.Namespace) -> Tuple[List[Dict[str, object]], Lis
             "mean_reusable_group_prefix_fraction_of_candidate_tokens": safe_mean(
                 [float(row["reusable_group_prefix_fraction_of_candidate_tokens"]) for row in step_rows]
             ),
+            "mean_exact_parent_child_prefix_fraction_of_candidate_tokens": safe_mean(
+                [float(row["exact_parent_child_prefix_fraction_of_candidate_tokens"]) for row in step_rows]
+            ),
+            "mean_sibling_shared_prefix_fraction_of_candidate_tokens": safe_mean(
+                [float(row["sibling_shared_prefix_fraction_of_candidate_tokens"]) for row in step_rows]
+            ),
             "corpus_reusable_prefix_fraction_of_candidate_tokens": (
                 total_reusable_tokens / total_candidate_tokens if total_candidate_tokens > 0 else 0.0
             ),
             "corpus_reusable_group_prefix_fraction_of_candidate_tokens": (
                 total_reusable_group_tokens / total_candidate_tokens if total_candidate_tokens > 0 else 0.0
             ),
+            "corpus_exact_parent_child_prefix_fraction_of_candidate_tokens": (
+                total_exact_parent_child_tokens / total_candidate_tokens if total_candidate_tokens > 0 else 0.0
+            ),
+            "corpus_sibling_shared_prefix_fraction_of_candidate_tokens": (
+                total_exact_sibling_shared_tokens / total_candidate_tokens if total_candidate_tokens > 0 else 0.0
+            ),
             "corpus_reusable_fraction_of_parent_prefix_tokens": (
                 total_reusable_tokens / total_parent_tokens if total_parent_tokens > 0 else 0.0
+            ),
+            "corpus_exact_parent_child_prefix_fraction_of_parent_tokens": (
+                total_exact_parent_child_tokens / total_parent_tokens if total_parent_tokens > 0 else 0.0
+            ),
+            "corpus_sibling_shared_prefix_fraction_of_parent_tokens": (
+                total_exact_sibling_shared_tokens / total_parent_tokens if total_parent_tokens > 0 else 0.0
             ),
             "weighted_pairwise_lcp_ratio": (
                 weighted_pairwise_ratio_sum / total_pair_count_used if total_pair_count_used > 0 else 0.0
@@ -456,9 +547,21 @@ def run_analysis(args: argparse.Namespace) -> Tuple[List[Dict[str, object]], Lis
                 "Upper-bound fraction of candidate token compute that could be skipped "
                 "if siblings also share any additional common prefix beyond the parent."
             ),
+            "exact_parent_child_prefix_fraction_of_candidate_tokens": (
+                "Exact model-token prefix overlap between parent and child, normalized by candidate length."
+            ),
+            "sibling_shared_prefix_fraction_of_candidate_tokens": (
+                "Exact shared-prefix reuse among siblings after removing the inherited parent prefix, normalized by candidate length."
+            ),
             "reusable_fraction_of_parent_prefix_tokens": (
                 "Fraction of parent-prefix compute that is redundant across siblings. "
                 "Higher means stronger motivation for prefix sharing."
+            ),
+            "exact_parent_child_prefix_fraction_of_parent_tokens": (
+                "Exact model-token prefix overlap between parent and child, normalized by parent-prefix length."
+            ),
+            "sibling_shared_prefix_fraction_of_parent_tokens": (
+                "Sibling-only shared-prefix reuse beyond the parent prefix, normalized by parent-prefix length."
             ),
             "pairwise_mean_lcp_ratio": (
                 "Average normalized longest-common-prefix overlap among all candidates in a step."
@@ -479,8 +582,20 @@ def run_analysis(args: argparse.Namespace) -> Tuple[List[Dict[str, object]], Lis
                 "reusable_group_prefix_fraction_of_candidate_tokens": row[
                     "reusable_group_prefix_fraction_of_candidate_tokens"
                 ],
+                "exact_parent_child_prefix_fraction_of_candidate_tokens": row[
+                    "exact_parent_child_prefix_fraction_of_candidate_tokens"
+                ],
+                "sibling_shared_prefix_fraction_of_candidate_tokens": row[
+                    "sibling_shared_prefix_fraction_of_candidate_tokens"
+                ],
                 "reusable_fraction_of_parent_prefix_tokens": row[
                     "reusable_fraction_of_parent_prefix_tokens"
+                ],
+                "exact_parent_child_prefix_fraction_of_parent_tokens": row[
+                    "exact_parent_child_prefix_fraction_of_parent_tokens"
+                ],
+                "sibling_shared_prefix_fraction_of_parent_tokens": row[
+                    "sibling_shared_prefix_fraction_of_parent_tokens"
                 ],
                 "pairwise_mean_lcp_ratio": row["pairwise_mean_lcp_ratio"],
                 "sibling_suffix_mean_lcp_ratio": row["sibling_suffix_mean_lcp_ratio"],
@@ -523,9 +638,20 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--tokenizer",
         type=str,
-        choices=["word", "char"],
+        choices=["word", "char", "hf"],
         default="word",
-        help="Tokenization granularity for overlap computations",
+        help="Tokenization granularity for overlap computations; use hf for model-token metrics",
+    )
+    parser.add_argument(
+        "--tokenizer_name_or_path",
+        type=str,
+        default=None,
+        help="Tokenizer name or local path used when --tokenizer hf is selected",
+    )
+    parser.add_argument(
+        "--hf_trust_remote_code",
+        action="store_true",
+        help="Allow remote tokenizer code when loading an HF tokenizer",
     )
     parser.add_argument(
         "--max_pairs",
