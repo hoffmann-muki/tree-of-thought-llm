@@ -7,7 +7,12 @@ def get_value(task, x, y, n_evaluate_sample, cache_value=True):
     value_prompt = task.value_prompt_wrap(x, y)
     if cache_value and value_prompt in task.value_cache:
         return task.value_cache[value_prompt]
-    value_outputs = gpt(value_prompt, n=n_evaluate_sample, stop=None)
+    value_outputs = gpt(
+        value_prompt,
+        n=n_evaluate_sample,
+        stop=None,
+        max_tokens=getattr(task, 'value_max_tokens', 1000),
+    )
     value = task.value_outputs_unwrap(x, y, value_outputs)
     if cache_value:
         task.value_cache[value_prompt] = value
@@ -27,13 +32,23 @@ def get_values(task, x, ys, n_evaluate_sample, cache_value=True):
 
 def get_votes(task, x, ys, n_evaluate_sample):
     vote_prompt = task.vote_prompt_wrap(x, ys)
-    vote_outputs = gpt(vote_prompt, n=n_evaluate_sample, stop=None)
+    vote_outputs = gpt(
+        vote_prompt,
+        n=n_evaluate_sample,
+        stop=None,
+        max_tokens=getattr(task, 'vote_max_tokens', 1000),
+    )
     values = task.vote_outputs_unwrap(vote_outputs, len(ys))
     return values
 
 def get_proposals(task, x, y): 
     propose_prompt = task.propose_prompt_wrap(x, y)
-    proposals = gpt(propose_prompt, n=1, stop=None)[0].split('\n')
+    proposals = gpt(
+        propose_prompt,
+        n=1,
+        stop=None,
+        max_tokens=getattr(task, 'propose_max_tokens', 1000),
+    )[0].split('\n')
     return [y + _ + '\n' for _ in proposals]
 
 def get_samples(task, x, y, n_generate_sample, prompt_sample, stop):
@@ -43,7 +58,12 @@ def get_samples(task, x, y, n_generate_sample, prompt_sample, stop):
         prompt = task.cot_prompt_wrap(x, y)
     else:
         raise ValueError(f'prompt_sample {prompt_sample} not recognized')
-    samples = gpt(prompt, n=n_generate_sample, stop=stop)
+    samples = gpt(
+        prompt,
+        n=n_generate_sample,
+        stop=stop,
+        max_tokens=getattr(task, 'sample_max_tokens', 1000),
+    )
     return [y + _ for _ in samples]
 
 def solve(args, task, idx, to_print=True):
